@@ -237,7 +237,7 @@ class XRegistry(XRegistryBase):
             device["params"]["sledOnline"] = params["sledOnline"]
 
         # we can get data from device, but without host
-        if "host" in msg and device.get("host") != msg["host"]:
+        if not device.get("force_host") and "host" in msg and device.get("host") != msg["host"]:
             # params for custom sensor
             device["host"] = params["host"] = msg["host"]
             device["localtype"] = msg["localtype"]

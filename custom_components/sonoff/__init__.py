@@ -223,6 +223,20 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     return True
 
+async def load_extra_device_configuration(hass: HomeAssistant, entry: ConfigEntry):
+    store = Store(hass, 1, f"{DOMAIN}/{entry.data['username']}_extra.json")
+    data = await store.async_load()
+    if data is None:
+        return []
+    return data
+
+def apply_extra_device_configuration(extra_configurations: list[dict], devices: list[dict]):
+    for device in devices:
+        for extra_configuration in extra_configurations:
+            if device['deviceid'] == extra_configuration['deviceid']:
+                device['host'] = extra_configuration['host']
+                device['force_host'] = True
+                break
 
 async def internal_normal_setup(hass: HomeAssistant, entry: ConfigEntry):
     devices = None
@@ -233,6 +247,9 @@ async def internal_normal_setup(hass: HomeAssistant, entry: ConfigEntry):
             homes = entry.options.get("homes")
             devices = await registry.cloud.get_devices(homes)
             _LOGGER.debug(f"{len(devices)} devices loaded from Cloud")
+
+            extra_configuration = await load_extra_device_configuration(hass, entry)
+            apply_extra_device_configuration(extra_configuration, devices)
 
             store = Store(hass, 1, f"{DOMAIN}/{entry.data['username']}.json")
             await store.async_save(devices)
